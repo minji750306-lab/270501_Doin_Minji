@@ -1,0 +1,65 @@
+import { put, head } from '@vercel/blob';
+
+export default async function handler(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
+  try {
+    const { slug, editKey, data, code } = req.body || {};
+    if (!slug || !/^[a-z0-9-]{3,40}$/.test(slug))
+      return res.status(400).json({ error: '주소는 영문 소문자·숫자·하이픈(-)만, 3~40자로 정해주세요.' });
+    if (!editKey || editKey.length < 4)
+      return res.status(400).json({ error: '수정 비밀번호는 4자 이상으로 정해주세요.' });
+    if (!data || !data.groom || !data.bride || !data.date || !data.venue)
+      return res.status(400).json({ error: '신랑·신부 이름, 날짜, 예식장은 필수예요.' });
+    const path = `inv/${slug}.json`;
+
+    // 기존 청첩장 확인
+    let exists = null;
+    try { exists = await head(path); } catch (e) { exists = null; }
+
+    if (exists) {
+      // ── 수정: 비밀번호만 확인, 코드 불필요 ──
+      const prev = await (await fetch(exists.url)).json();
+      if (prev.editKey !== editKey)
+        return res.status(409).json({ error: '이미 사용 중인 주소예요. (본인 청첩장이면 처음 정한 수정 비밀번호를 입력하세요)' });
+      if (prev.code) data._code = prev.code;
+      await put(path, JSON.stringify({ editKey, code: prev.code || null, data, updated: Date.now() }), {
+        access: 'public', contentType: 'application/json',
+        addRandomSuffix: false, allowOverwrite: true, cacheControlMaxAge: 0
+      });
+      return res.status(200).json({ ok: true, slug, updated: true });
+    }
+
+    // ── 신규 생성: 초대 코드 필수 ──
+    const codeUp = (code || '').trim().toUpperCase();
+    if (!/^[A-Z0-9-]{4,20}$/.test(codeUp))
+      return res.status(400).json({ error: '초대 코드를 입력해 주세요.' });
+    let codeMeta = null;
+    try { codeMeta = await head(`code/${codeUp}.json`); } catch (e) { codeMeta = null; }
+    if (!codeMeta)
+      return res.status(403).json({ error: '유효하지 않은 초대 코드예요.' });
+    const codeData = await (await fetch(`${codeMeta.url}?t=${Date.now()}`)).json();
+    if (codeData.usedBy)
+      return res.status(403).json({ error: '이미 사용된 초대 코드예요.' });
+
+    // ── 순서 변경: 청첩장 데이터를 먼저 저장하고, 성공한 뒤에만 코드를 사용 처리 ──
+    // 이렇게 하면 저장 중간에 실패해도 코드가 "사용됨"으로 잘못 남는 일이 없음
+    await put(path, JSON.stringify({ editKey, code: codeUp, data, updated: Date.now() }), {
+      access: 'public', contentType: 'application/json',
+      addRandomSuffix: false, allowOverwrite: true, cacheControlMaxAge: 0
+    });
+
+    try {
+      await put(`code/${codeUp}.json`, JSON.stringify({ ...codeData, usedBy: slug, usedAt: Date.now() }), {
+        access: 'public', contentType: 'application/json',
+        addRandomSuffix: false, allowOverwrite: true, cacheControlMaxAge: 0
+      });
+    } catch (e) {
+      // 코드 상태 갱신이 실패해도 청첩장 자체는 이미 저장됐으므로 사용자에게는 성공으로 응답
+      // (코드 상태는 다음 admin list 조회 시 여전히 "미사용"으로 보일 수 있음)
+    }
+
+    return res.status(200).json({ ok: true, slug, updated: false });
+  } catch (e) {
+    return res.status(500).json({ error: '저장 중 문제가 생겼어요. 잠시 후 다시 시도해주세요.' });
+  }
+}

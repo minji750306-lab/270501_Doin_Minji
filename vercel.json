@@ -1,0 +1,5 @@
+{
+  "rewrites": [
+    { "source": "/:slug((?!api/|index\\.html|i\\.html|favicon).+)", "destination": "/api/card?slug=:slug" }
+  ]
+}

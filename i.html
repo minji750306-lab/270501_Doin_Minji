@@ -94,12 +94,6 @@ section{padding:72px 24px;word-break:keep-all;overflow-wrap:break-word}
 .hero.style-frame .frameimg{width:100%;aspect-ratio:4/5;object-fit:cover;display:block}
 .hero.style-frame .info3{margin-top:20px;font-size:12.5px;line-height:2;color:var(--muted);font-weight:300}
 .hero.style-frame .datebig{font-family:'Cormorant Garamond',serif;font-size:26px;letter-spacing:.28em;color:var(--ink);margin-top:16px}
-/* ── HERO 변형: 매거진형 ── */
-.hero.style-mag::before{content:"";position:absolute;inset:0;background:rgba(20,14,16,.24);z-index:1;pointer-events:none}
-.hero.style-mag .magcenter{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--white);text-align:center;padding:0 24px;z-index:2;text-shadow:0 1px 14px rgba(0,0,0,.55),0 0 2px rgba(0,0,0,.4)}
-.hero.style-mag .txt{z-index:2}
-.hero.style-mag .magtitle{font-family:'Great Vibes',cursive;font-size:58px;line-height:1.15;font-weight:400}
-.hero.style-mag .txt .lead{display:none}
 /* 꽃잎 */
 .petal{position:absolute;top:-4vh;border-radius:60% 40% 55% 45%/55% 60% 40% 45%;background:var(--sage-lt);opacity:.7;animation:fall linear infinite;pointer-events:none}
 @keyframes fall{
@@ -174,9 +168,14 @@ section{padding:72px 24px;word-break:keep-all;overflow-wrap:break-word}
 }
 .acc-row .who{font-size:12.5px;color:var(--sage-lt);margin-bottom:4px}
 .acc-row .num{font-size:14.5px;letter-spacing:.02em;margin-bottom:12px;font-weight:300}
-.acc-row button{
+.acc-row .btns{display:flex;gap:8px;flex-wrap:wrap}
+.acc-row button,.acc-row .kakao{
   border:1px solid rgba(253,252,248,.4);background:none;color:var(--cream);
   padding:8px 16px;border-radius:6px;font-size:12.5px;cursor:pointer;font-family:inherit;
+}
+.acc-row .kakao{
+  background:#FEE500;border-color:#FEE500;color:#191600;text-decoration:none;
+  display:inline-flex;align-items:center;gap:5px;font-weight:500;
 }
 
 /* ── 푸터 ── */
@@ -472,13 +471,6 @@ if(heroStyle==='arch'){
     <div class="info3">${dateLine}<br>${D.venue}${D.hall?' · '+D.hall:''}</div>
   </div>`;
 }else{
-  if(heroStyle==='mag'){
-    heroSec.classList.add('style-mag');
-    const mc=document.createElement('div');
-    mc.className='magcenter fu';
-    mc.innerHTML='<div class="magtitle">our<br>wedding<br>day</div>';
-    heroSec.insertBefore(mc,heroSec.querySelector('.txt'));
-  }
   $('heroImg').src=D.hero||'';
   $('heroImg').onerror=function(){this.onerror=null;this.style.display='none';this.parentElement.style.background='linear-gradient(160deg,#465243,#2E3A2C)';};
   $('lead').textContent=D.lead||'';
@@ -590,7 +582,10 @@ else{
 }
 
 /* 계좌 */
-const accs=[['신랑측',D.accG],['신부측',D.accB]];
+/* 순서: accOrder가 'bride'면 신부측을 먼저 보여줘요 */
+const accs = D.accOrder==='bride'
+  ? [['신부측',D.accB],['신랑측',D.accG]]
+  : [['신랑측',D.accG],['신부측',D.accB]];
 const aw=$('accWrap');let anyAcc=false;
 accs.forEach(([side,list])=>{
   if(!list||!list.length)return;anyAcc=true;
@@ -598,10 +593,17 @@ accs.forEach(([side,list])=>{
   de.innerHTML=`<summary>${side} 계좌번호 보기</summary>`;
   list.forEach(a=>{
     const r=document.createElement('div');r.className='acc-row';
-    r.innerHTML=`<div class="who"></div><div class="num"></div><button>계좌번호 복사</button>`;
+    r.innerHTML=`<div class="who"></div><div class="num"></div><div class="btns"><button>계좌번호 복사</button></div>`;
     r.querySelector('.who').textContent=a.who||'';
     r.querySelector('.num').textContent=`${a.bank||''} ${a.num||''}`;
     r.querySelector('button').addEventListener('click',()=>copyText((a.num||'').replace(/[^0-9-]/g,''),'계좌번호가 복사되었습니다'));
+    /* 카카오페이 송금 링크를 넣은 경우에만 노란 버튼이 붙어요 */
+    if(a.kakao&&/^https:\/\/(qr\.kakaopay\.com|link\.kakaopay\.com)\//.test(a.kakao)){
+      const k=document.createElement('a');
+      k.className='kakao';k.href=a.kakao;k.target='_blank';k.rel='noopener';
+      k.textContent='카카오페이 송금';
+      r.querySelector('.btns').appendChild(k);
+    }
     de.appendChild(r);
   });
   aw.appendChild(de);

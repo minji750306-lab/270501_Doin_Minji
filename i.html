@@ -478,8 +478,8 @@ footer .credit{margin-top:10px;font-size:10.5px;opacity:.4;font-family:'Noto San
 </div>
 
 <script>
-const CREDIT_TEXT = 'made by 밍지로움';  /* ← 크레딧 문구는 여기서만 바꾸면 돼요 */
-const CREDIT_URL  = 'https://blog.naver.com/record_minji';  /* ← 출처 링크 (선택) 예: 'https://instagram.com/아이디' — 비우면 글씨만 표시돼요 */
+const CREDIT_TEXT = 'made by 민지';  /* ← 크레딧 문구는 여기서만 바꾸면 돼요 */
+const CREDIT_URL  = '';  /* ← 출처 링크 (선택) 예: 'https://instagram.com/아이디' — 비우면 글씨만 표시돼요 */
 {
   const c=document.getElementById('credit');
   if(CREDIT_URL){
@@ -637,7 +637,7 @@ const HERO_HTML={
     <div class="infoF">${dateLine}<br>${venueLine}</div>
   </div>`,
   petalcard:`<div class="pcard fu">
-    <div class="greetP">Just Married</div>
+    <div class="greetP">Our Wedding Day</div>
     <img class="pimg" src="${D.hero||''}" alt="" onerror="${IMGERR}">
     <div class="namesP">${N1}<span class="ampP">&amp;</span>${N2}</div>
     <div class="infoP">${dateLine}<br>${venueLine}</div>
@@ -650,7 +650,7 @@ if(HERO_HTML[heroStyle]){
 }else if(heroStyle==='arch'){
   heroSec.className='hero style-arch';
   heroSec.innerHTML=`<div class="archwrap fu">
-    <div class="eyebrow2">We are getting married</div>
+    <div class="eyebrow2">Our Wedding Day</div>
     <img class="archimg" src="${D.hero||''}" alt="" onerror="this.onerror=null;this.style.background='var(--sage-lt)';this.removeAttribute('src')">
     <div class="names2">${N1}<span class="amp2">and</span>${N2}</div>
     <div class="info2">${dateLine}<br>${D.venue}${D.hall?' · '+D.hall:''}</div>
